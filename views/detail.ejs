@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        <%= todo.text %>
+    </title>
+</head>
+
+<body>
+    <div id="todo-detail">
+        <%- include('_todo-detail') %>
+    </div>
+    <form action="/update-name/<%=todo.id %>" method="post" id="change-name-form">
+        <label for="name">Change todo name:</label>
+        <input type="text" name="text" />
+        <button type="submit">OK</button>
+    </form>
+
+    <script>
+        const ws = new WebSocket(`ws://localhost:3000`)
+        ws.addEventListener('message', (message) => {
+            const json = JSON.parse(message.data)
+            if (json.type === 'todo-detail' && json.todoId === Number('<%= todo.id %>')) {
+                document.getElementById('todo-detail').innerHTML = json.html
+            } else if (json.type === 'todo-deleted' && json.todoId === Number('<%= todo.id %>')) {
+                if (json.deletedFromDetail) {
+                    window.location.replace('/') // redirect to home page
+                } else {
+                    document.getElementById('todo-detail').innerHTML = json.html // show user that todo was deleted
+                    document.getElementById('change-name-form').style.display = 'none'
+                }
+            }
+        })
+
+    </script>
+</body>
+
+</html>

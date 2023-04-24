@@ -1,0 +1,43 @@
+<h1>
+    Detail of todo <%= todo.text %>
+</h1>
+<a href="/">Back</a>
+<hr>
+<table>
+    <tr>
+        <th>Text</th>
+        <th>Done</th>
+        <th>Priority</th>
+        <th>Deadline</th>
+        <th>Action</th>
+    </tr>
+    <tr>
+        <td>
+            <%= todo.text %>
+        </td>
+        <td>
+            <%= todo.done ? 'yes' : 'no' %>
+        </td>
+        <td>
+            <% if(todo.priority==="3" ){ %>
+                <span>Very high</span>
+                <% } else if(todo.priority==="2" ){ %>
+                    <span>High</span>
+                    <% } else { %>
+                        <span>Low</span>
+                        <% } %>
+        </td>
+        <td>
+            <%= todo.deadline %>
+        </td>
+        <td>
+            <% if (todo.done) { %>
+                <a href="/toggle/<%= todo.id %>">Undone</a>
+                <a href="/delete/<%= todo.id %>/true">Delete</a>
+                <% } else { %>
+                    <a href="/toggle/<%= todo.id %>">Done</a>
+                    <% } %>
+        </td>
+    </tr>
+</table>
+<hr>

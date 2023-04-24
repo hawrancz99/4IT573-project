@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>
+        <%= title %>
+    </title>
+</head>
+
+<body>
+    <h1>
+        <%= title %>
+    </h1>
+    <h2>Welcome <%= user.name %>!!</h2> <!-- bereš z res.locals.user-->
+    <hr>
+    <a href="/users/signout">Sign out</a>
+    <hr>
+    <h3>List of your current todos:</h3>
+
+    <div id="todos">
+        <%- include('_todos') %>
+    </div>
+
+    <br><span>Filters:</span>
+    <br><a href="/todos?filter=done">Show only done todos</a>
+    <br><a href="/todos?filter=undone">Show only undone todos</a>
+    <br><a href="/todos?filter=latest">Show latest todos</a>
+    <br><a href="/todos?filter=oldest">Show oldest todos</a>
+    <br><br><a href="/">Remove filters</a>
+    <hr>
+    <h3>Add a new Todo:</h3>
+    <form action="/todos/add" method="post">
+        <label for="text">Name:</label>
+        <input type="text" name="text" />
+        <label for="priority">Priority:</label>
+        <select name="priority" id="priority">
+            <option value="3">Very high</option>
+            <option value="2">High</option>
+            <option value="1">Low</option>
+        </select>
+        <label for="deadline">Deadline:</label>
+        <input type="date" id="deadline" name="deadline">
+        <button type="submit">Add</button>
+    </form>
+    <script>
+        /*const ws = new WebSocket('ws://localhost:3000')
+        ws.addEventListener('message', (message) => {
+            const json = JSON.parse(message.data)
+
+            if (json.type === 'todos') {
+                document.getElementById('todos').innerHTML = json.html
+            }
+        })*/
+    </script>
+</body>
+
+</html>
