@@ -32,10 +32,10 @@
         </td>
         <td>
             <% if (todo.done) { %>
-                <a href="/toggle/<%= todo.id %>">Undone</a>
-                <a href="/delete/<%= todo.id %>/true">Delete</a>
+                <a href="/todos/toggle/<%= todo.id %>">Undone</a>
+                <a href="/todos/delete/<%= todo.id %>/true">Delete</a>
                 <% } else { %>
-                    <a href="/toggle/<%= todo.id %>">Done</a>
+                    <a href="/todos/toggle/<%= todo.id %>">Done</a>
                     <% } %>
         </td>
     </tr>

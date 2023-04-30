@@ -14,7 +14,7 @@
     <h1>
         <%= title %>
     </h1>
-    <h2>Welcome <%= user.name %>!!</h2> <!-- bereš z res.locals.user-->
+    <h2>Welcome <%= user.name %>!</h2>
     <hr>
     <a href="/users/signout">Sign out</a>
     <hr>
@@ -46,14 +46,13 @@
         <button type="submit">Add</button>
     </form>
     <script>
-        /*const ws = new WebSocket('ws://localhost:3000')
+        const ws = new WebSocket('ws://localhost:8080');
         ws.addEventListener('message', (message) => {
             const json = JSON.parse(message.data)
-
-            if (json.type === 'todos') {
+            if (json.type === 'todos' && json.userId === Number('<%= user.id %>')) {
                 document.getElementById('todos').innerHTML = json.html
             }
-        })*/
+        })
     </script>
 </body>
 

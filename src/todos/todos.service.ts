@@ -3,7 +3,7 @@ import { CreateTodoDto } from './dto/create-todo.dto';
 import { Todo, TodoFilter } from './entities/todo.entity';
 import { Knex } from 'knex';
 import { InjectKnex } from 'nestjs-knex';
-import { UpdateTodoStatusDto } from './dto/update-todo.dto';
+import { UpdateTodoNameDto } from './dto/update-todo.dto';
 
 @Injectable()
 export class TodosService {
@@ -60,11 +60,15 @@ export class TodosService {
     return await this.db.table('todos').select('*').where('user_id', userId).andWhere('id', id).first()
   }
 
-  async updateStatus(userId: number, updateTodoStatusDto: UpdateTodoStatusDto) {
-    return await this.db.table('todos').update({ done: !updateTodoStatusDto.done }).where('id', updateTodoStatusDto.id).andWhere('user_id', userId)
+  async updateStatus(userId: number, todo: Todo) {
+    return await this.db.table('todos').update({ done: !todo.done }).where('id', todo.id).andWhere('user_id', userId)
   }
 
   async remove(userId: number,id: number) {
     return await this.db.table('todos').delete().where('id', id).andWhere('user_id', userId)
+  }
+
+  async updateName(userId: number, updateTodoNameDto: UpdateTodoNameDto, id: number) {
+    return await this.db.table('todos').update({ text: updateTodoNameDto.text }).where('id', id).andWhere('user_id', userId)
   }
 }

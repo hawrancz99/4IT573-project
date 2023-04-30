@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import * as cookieParser from 'cookie-parser'
+import { WsAdapter } from '@nestjs/platform-ws';
 
 const port = 3000;
 
@@ -12,8 +13,8 @@ async function bootstrap() {
   );
 
   app.use(cookieParser());
-  
-  //app.useStaticAssets(join(__dirname, '..', 'public')); TO-DO CHECK if I need that
+  app.useWebSocketAdapter(new WsAdapter(app))
+  //app.useStaticAssets(join(__dirname, '..', 'public')); //TO-DO CHECK if I need that
   app.setBaseViewsDir(join(__dirname, '..', 'views'));
   app.setViewEngine('ejs');
   

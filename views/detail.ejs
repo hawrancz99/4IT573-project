@@ -14,24 +14,26 @@
     <div id="todo-detail">
         <%- include('_todo-detail') %>
     </div>
-    <form action="/update-name/<%=todo.id %>" method="post" id="change-name-form">
+    <form action="/todos/update-name/<%=todo.id %>" method="post" id="change-name-form">
         <label for="name">Change todo name:</label>
         <input type="text" name="text" />
         <button type="submit">OK</button>
     </form>
 
     <script>
-        const ws = new WebSocket(`ws://localhost:3000`)
+        const ws = new WebSocket(`ws://localhost:8080`)
         ws.addEventListener('message', (message) => {
             const json = JSON.parse(message.data)
-            if (json.type === 'todo-detail' && json.todoId === Number('<%= todo.id %>')) {
-                document.getElementById('todo-detail').innerHTML = json.html
-            } else if (json.type === 'todo-deleted' && json.todoId === Number('<%= todo.id %>')) {
-                if (json.deletedFromDetail) {
-                    window.location.replace('/') // redirect to home page
-                } else {
-                    document.getElementById('todo-detail').innerHTML = json.html // show user that todo was deleted
-                    document.getElementById('change-name-form').style.display = 'none'
+            if (json.userId === Number('<%= user.id %>')) {
+                if (json.type === 'todo-detail' && Number(json.todoId) === Number('<%= todo.id %>')) {
+                    document.getElementById('todo-detail').innerHTML = json.html
+                } else if (json.type === 'todo-deleted' && Number(json.todoId) === Number('<%= todo.id %>')) {
+                    if (json.deletedFromDetail) {
+                        window.location.replace('/') // redirect to home page
+                    } else {
+                        document.getElementById('todo-detail').innerHTML = json.html // show user that todo was deleted
+                        document.getElementById('change-name-form').style.display = 'none'
+                    }
                 }
             }
         })

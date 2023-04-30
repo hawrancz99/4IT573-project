@@ -1,11 +1,12 @@
-import { MiddlewareConsumer, Module, NestModule, RequestMethod } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TodosModule } from './todos/todos.module';
 import { KnexModule } from 'nestjs-knex';
 import { UsersModule } from './users/users.module';
-import { auth } from './auth.middleware';
-import { UserMiddleware } from './user.middleware';
+import { auth } from './middleware/auth.middleware';
+import { UserMiddleware } from './middleware/user.middleware';
+import { EventsModule } from './events/events.module';
 
 @Module({
   imports: [
@@ -19,7 +20,8 @@ import { UserMiddleware } from './user.middleware';
         },
       },
     }),
-    UsersModule
+    UsersModule,
+    EventsModule
   ],
   controllers: [AppController],
   providers: [AppService],

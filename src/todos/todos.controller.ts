@@ -1,12 +1,28 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Query, Render, Redirect, Res, UseGuards, Catch, Next } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  Render,
+  Redirect,
+  Res,
+} from '@nestjs/common';
 import { TodosService } from './todos.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
-import { Todo, TodoError, TodoFilter, TodoHomePage } from './entities/todo.entity';
-import { NextFunction, Response } from 'express';
+import {
+  TodoError,
+  TodoFilter,
+  TodoHomePage,
+} from './entities/todo.entity';
+import { Response } from 'express';
+import { UpdateTodoNameDto } from './dto/update-todo.dto';
+import { EventsGateway } from 'src/events/events.gateway';
 
 @Controller('todos')
 export class TodosController {
-  constructor(private readonly todosService: TodosService) {}
+  constructor(private readonly todosService: TodosService, private readonly events: EventsGateway) {}
 
   @Get()
   @Render('index')
@@ -15,7 +31,53 @@ export class TodosController {
     @Query('filter') filter?: TodoFilter,
   ): Promise<TodoHomePage> {
     const todos = await this.todosService.getAll(res.locals.user.id, filter);
-    return { title: 'Todos', todos };
+    return { title: 'Todos', todos};
+  }
+
+  @Get('toggle/:id')
+  @Redirect('back')
+  async toggleStatus(@Res() res: Response, @Param('id') id: number) {
+    const todo = await this.todosService.findOne(res.locals.user.id, id);
+    if (todo) {
+      await this.todosService.updateStatus(res.locals.user.id, todo);
+    }
+    this.events.sendTodosToAllConnections(res.locals.user.id);
+    this.events.sendTodoDetailToAllConnections(res.locals.user.id, id);
+  }
+
+  @Get('detail/:id')
+  @Render('detail')
+  async getDetail(@Res() res: Response, @Param('id') id: number) {
+    const todo = await this.todosService.findOne(res.locals.user.id, id);
+    if (!todo) {
+      res.redirect('/');
+    } else {
+      return { todo };
+    }
+  }
+
+  @Get('delete/:id/:fromDetail')
+  @Redirect('/')
+  async remove(
+    @Res() res: Response,
+    @Param('id') id: number,
+    @Param('fromDetail') fromDetail: string,
+  ) {
+    const todo = await this.todosService.findOne(res.locals.user.id, id);
+    if (todo) {
+      await this.todosService.remove(res.locals.user.id, id);
+      this.events.sendTodosToAllConnections(res.locals.user.id); // inform connections viewing todos list
+      this.events.closeTodoDetailConnections(id, fromDetail === "true",res.locals.user.id); // inform connections viewing todo detail
+    }
+  }
+
+  @Get('error/:type')
+  getError(@Res() res: Response, @Param('type') type: TodoError) {
+    if (type === 'empty-text') {
+      res.render('errors/error-empty-text');
+    } else if (type === 'empty-deadline') {
+      res.render('errors/error-empty-deadline');
+    }
   }
 
   @Post('add')
@@ -28,51 +90,26 @@ export class TodosController {
     } else {
       createTodoDto.user_id = res.locals.user.id;
       await this.todosService.create(createTodoDto);
+      this.events.sendTodosToAllConnections(res.locals.user.id);
     }
   }
 
-  @Get('toggle/:id')
+  @Post('update-name/:id')
   @Redirect('back')
-  async toggleStatus(@Res() res: Response, @Param('id') id: number) {
+  async update(
+    @Res() res: Response,
+    @Param('id') id: number,
+    @Body() updateTodoNameDto: UpdateTodoNameDto,
+  ) {
     const todo = await this.todosService.findOne(res.locals.user.id, id);
-    console.log(todo)
-    if(todo){
-      await this.todosService.updateStatus(res.locals.user.id, todo);
-    }
-    /*sendTodosToAllConnections(userId);
-    sendTodoDetailToAllConnections(userId, id);*/
-  }
-
-  /*@Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.todosService.findOne(+id);
-  }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateTodoDto: UpdateTodoDto) {
-    return this.todosService.update(+id, updateTodoDto);
-  }*/
-
-  @Get('delete/:id/:fromDetail')
-  @Redirect('/')
-  async remove(@Res() res: Response,@Param('id') id: number, @Param('fromDetail') fromDetail: boolean) {
-    const todo = await this.todosService.findOne(res.locals.user.id, id);
-    console.log(todo)
-    if(todo){
-      await this.todosService.remove(res.locals.user.id,id);
-
-      /*sendTodosToAllConnections(userId); // inform connections viewing todos list
-      const deletedFromDetail = req.params.fromDetail === "true";
-      closeTodoDetailConnections(id, deletedFromDetail); // inform connections viewing todo detail*/
-    }
-  }
-
-  @Get('error/:type')
-  getError(@Res() res: Response, @Param('type') type: TodoError) {
-    if (type === 'empty-text') {
-      res.render('errors/error-empty-text');
-    } else if (type === 'empty-deadline') {
-      res.render('errors/error-empty-deadline');
+    if (todo) {
+      await this.todosService.updateName(
+        res.locals.user.id,
+        updateTodoNameDto,
+        id,
+      );
+      this.events.sendTodosToAllConnections(res.locals.user.id);
+      this.events.sendTodoDetailToAllConnections(res.locals.user.id, id);
     }
   }
 }
