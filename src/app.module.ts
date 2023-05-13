@@ -31,9 +31,9 @@ export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {
     consumer
       .apply(UserMiddleware)
-      .forRoutes('/todos');
+      .forRoutes('/todos','/users/settings','/users/update-name','users/update-password');
     consumer
       .apply(auth)
-      .forRoutes('/todos');
+      .forRoutes('/todos','/users/settings','/users/update-name','users/update-password');
   }
 }

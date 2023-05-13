@@ -3,7 +3,7 @@ import { CreateTodoDto } from './dto/create-todo.dto';
 import { Todo, TodoFilter } from './entities/todo.entity';
 import { Knex } from 'knex';
 import { InjectKnex } from 'nestjs-knex';
-import { UpdateTodoNameDto } from './dto/update-todo.dto';
+import { UpdateTodoDeadlineDto, UpdateTodoNameDto, UpdateTodoPriorityDto } from './dto/update-todo.dto';
 
 @Injectable()
 export class TodosService {
@@ -49,6 +49,14 @@ export class TodosService {
           todos = await this.findAll(userId);
           todos.sort((a, b) => a.id - b.id);
           break;
+        case 'priorityDesc':
+          todos = await this.findAll(userId);
+          todos.sort((a, b) => parseInt(b.priority) - parseInt(a.priority));
+          break;
+        case 'priorityAsc':
+          todos = await this.findAll(userId);
+          todos.sort((a, b) => parseInt(a.priority) - parseInt(b.priority));
+          break;
       }
     } else {
       todos = await this.findAll(userId);
@@ -70,5 +78,13 @@ export class TodosService {
 
   async updateName(userId: number, updateTodoNameDto: UpdateTodoNameDto, id: number) {
     return await this.db.table('todos').update({ text: updateTodoNameDto.text }).where('id', id).andWhere('user_id', userId)
+  }
+
+  async updatePriority(userId: number, updateTodoPriorityDto: UpdateTodoPriorityDto, id: number) {
+    return await this.db.table('todos').update({ priority: updateTodoPriorityDto.priority }).where('id', id).andWhere('user_id', userId)
+  }
+
+  async updateDeadline(userId: number, updateTodoDeadlineDto: UpdateTodoDeadlineDto, id: number) {
+    return await this.db.table('todos').update({ deadline: updateTodoDeadlineDto.deadline }).where('id', id).andWhere('user_id', userId)
   }
 }

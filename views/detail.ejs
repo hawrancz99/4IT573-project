@@ -19,6 +19,22 @@
         <input type="text" name="text" />
         <button type="submit">OK</button>
     </form>
+    <br>
+    <form action="/todos/update-priority/<%=todo.id %>" method="post" id="change-priority-form">
+        <label for="priority">Change todo priority:</label>
+        <select name="priority" id="priority">
+            <option value="3">Very high</option>
+            <option value="2">High</option>
+            <option value="1">Low</option>
+        </select>
+        <button type="submit">OK</button>
+    </form>
+    <br>
+    <form action="/todos/update-deadline/<%=todo.id %>" method="post" id="change-deadline-form">
+        <label for="deadline">Change todo deadline:</label>
+        <input type="date" id="deadline" name="deadline">
+        <button type="submit">OK</button>
+    </form>
 
     <script>
         const ws = new WebSocket(`ws://localhost:8080`)
@@ -26,18 +42,23 @@
             const json = JSON.parse(message.data)
             if (json.userId === Number('<%= user.id %>')) {
                 if (json.type === 'todo-detail' && Number(json.todoId) === Number('<%= todo.id %>')) {
-                    document.getElementById('todo-detail').innerHTML = json.html
+                    document.getElementById('todo-detail').innerHTML = json.html;
+                    document.getElementById('priority').value = json.todoPriority;
+                    document.getElementById('deadline').value = json.todoDeadline;
                 } else if (json.type === 'todo-deleted' && Number(json.todoId) === Number('<%= todo.id %>')) {
                     if (json.deletedFromDetail) {
                         window.location.replace('/') // redirect to home page
                     } else {
                         document.getElementById('todo-detail').innerHTML = json.html // show user that todo was deleted
                         document.getElementById('change-name-form').style.display = 'none'
+                        document.getElementById('change-priority-form').style.display = 'none'
+                        document.getElementById('change-deadline-form').style.display = 'none'
                     }
                 }
             }
         })
-
+        document.getElementById('priority').value = '<%= todo.priority %>';
+        document.getElementById('deadline').value = '<%= todo.deadline %>';
     </script>
 </body>
 

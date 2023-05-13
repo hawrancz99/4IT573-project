@@ -7,26 +7,40 @@ import {
   Redirect,
   Render,
   Res,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { User, UserError } from './entities/user.entity';
 import { Response } from 'express';
 import { LoginUserDto } from './dto/login-user.dto';
+import {
+  UpdateUserNameDto,
+  UpdateUserPasswordDto,
+} from './dto/update-user.dto';
+import { EventsGateway } from 'src/events/events.gateway';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService, private readonly events: EventsGateway) {}
 
   @Get('/register')
   @Render('register')
   renderRegister() {}
 
   @Post('/register')
-  @Redirect('/')
+  @Redirect('/todos')
   async create(@Body() createBody: CreateUserDto, @Res() res: Response) {
-    const user: User = await this.usersService.createUser(createBody);
-    res.cookie('token', user.token);
+    if (!createBody.name || !createBody.password) {
+      return { url: 'error/empty-credentials' };
+    }
+    const usernameExists = await this.usersService.getUser(createBody);
+    if (!usernameExists) {
+      const user: User = await this.usersService.createUser(createBody);
+      res.cookie('token', user.token);
+    } else {
+      return { url: 'error/name-exists' };
+    }
   }
 
   @Get('login')
@@ -45,37 +59,115 @@ export class UsersController {
   }
 
   @Get('signout')
-  @Redirect('/')
+  @Redirect('/users/login')
   signout(@Res() res: Response) {
-    res.clearCookie('token')
+    res.clearCookie('token');
   }
-  
 
-  @Get('error/:type')
-  getError(@Res() res: Response, @Param('type') type: UserError) {
-    if (type === 'wrong-credentials') {
-      res.render('errors/error-wrong-credentials');
+  @Get('settings')
+  @Render('user-settings')
+  renderUserSettings() {}
+
+  @Post('update-name')
+  @Redirect('/users/settings')
+  async updateUser(
+    @Body() updateUserNameBody: UpdateUserNameDto,
+    @Res() res: Response,
+  ) {
+    if (!updateUserNameBody.name) return { url: 'error/empty-new-username' };
+
+    if(updateUserNameBody.name === res.locals.user.name) return { url: 'error/same-name'}
+    
+    const usernameExists = await this.usersService.getUserByName(updateUserNameBody.name);
+    if (usernameExists) return { url: 'error/name-exists'};
+
+    const user = await this.usersService.getUserByIdAndName(
+      res.locals.user.id,
+      res.locals.user.name,
+    );
+    if (!user) {
+      return { url: 'error/no-user' };
+    } else {
+      await this.usersService.updateName(
+        res.locals.user.id,
+        updateUserNameBody,
+      );
+      this.events.sendUpdatedUserToAllConnections(res.locals.user.id);
     }
   }
 
-  /*
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
+  @Post('update-password')
+  @Redirect('/users/signout')
+  async updatePassowrd(
+    @Body() updatePassBody: UpdateUserPasswordDto,
+    @Res() res: Response,
+  ) {
+    if (
+      !updatePassBody.oldPassword ||
+      !updatePassBody.newPassword ||
+      !updatePassBody.newPasswordCheck
+    ) {
+      return { url: 'error/empty-new-password' };
+    }
+
+    const user = await this.usersService.getUser({
+      name: res.locals.user.name,
+      password: updatePassBody.oldPassword,
+    });
+
+    if (!user) {
+      return { url: 'error/wrong-current-password' };
+    } else if (updatePassBody.newPassword !== updatePassBody.newPasswordCheck) {
+      return { url: 'error/wrong-new-password' };
+    } else if (updatePassBody.oldPassword === updatePassBody.newPassword) {
+      return { url: 'error/same-password' };
+    } else {
+      await this.usersService.updatePassword(
+        res.locals.user.id,
+        res.locals.user.name,
+        updatePassBody.newPassword,
+      );
+      this.events.sendSignoutUserToAllConnections(res.locals.user.id);
+    }
   }
 
-  /*@Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
+  @Get('password-changed')
+  @Render('password-changed')
+  renderPasswordChanged() {}
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+  @Get('error/:type')
+  getError(@Res() res: Response, @Param('type') type: UserError) {
+    switch (type) {
+      case 'wrong-credentials':
+        res.render('errors/wrong-credentials');
+        break;
+      case 'name-exists':
+        res.render('errors/name-exists');
+        break;
+      case 'empty-credentials':
+        res.render('errors/empty-credentials');
+        break;
+      case 'no-user':
+        res.render('errors/no-user');
+        break;
+      case 'empty-new-username':
+        res.render('errors/empty-new-username');
+        break;
+      case 'empty-new-password':
+        res.render('errors/empty-new-password');
+        break;
+      case 'wrong-current-password':
+        res.render('errors/wrong-current-password');
+        break;
+      case 'wrong-new-password':
+        res.render('errors/wrong-new-password');
+        break;
+      case 'same-password':
+        res.render('errors/same-password');
+        break;
+      case 'same-name':
+        res.render('errors/same-name');
+        break;
+    }
   }
-
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
-  }*/
 }

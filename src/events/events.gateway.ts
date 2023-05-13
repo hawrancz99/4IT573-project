@@ -7,10 +7,12 @@ import {
 import { Server } from 'ws';
 import * as ejs from 'ejs';
 import { TodosService } from 'src/todos/todos.service';
+import { UsersService } from 'src/users/users.service';
+import { User } from 'src/users/entities/user.entity';
 
 @WebSocketGateway(8080)
 export class EventsGateway {
-  constructor(private readonly todosService: TodosService) {}
+  constructor(private readonly todosService: TodosService, private readonly usersService: UsersService) {}
 
   @WebSocketServer()
   server: Server;
@@ -49,6 +51,8 @@ export class EventsGateway {
         type: 'todo-detail',
         html,
         todoId: todo.id,
+        todoPriority: todo.priority,
+        todoDeadline: todo.deadline,
         userId
       };
       const json = JSON.stringify(message);
@@ -74,4 +78,32 @@ export class EventsGateway {
       connection.send(json);
     }
   }
+
+  public async sendUpdatedUserToAllConnections(userId: number): Promise<void> {
+    const user: User = await this.usersService.getUserById(userId);
+    const html = await ejs.renderFile('views/_user-name.ejs', {
+      user,
+    });
+    const message = {
+      type: 'new-username',
+      html,
+      userId: user.id
+    };
+    const json = JSON.stringify(message);
+    for (const connection of this.server.clients) {
+      connection.send(json);
+    }
+  }
+
+  public async sendSignoutUserToAllConnections(userId: number): Promise<void> {
+    const message = {
+      type: 'user-credentials-updated',
+      userId
+    };
+    const json = JSON.stringify(message);
+    for (const connection of this.server.clients) {
+      connection.send(json);
+    }
+  }
+  
 }

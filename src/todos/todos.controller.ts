@@ -17,7 +17,7 @@ import {
   TodoHomePage,
 } from './entities/todo.entity';
 import { Response } from 'express';
-import { UpdateTodoNameDto } from './dto/update-todo.dto';
+import { UpdateTodoDeadlineDto, UpdateTodoNameDto, UpdateTodoPriorityDto } from './dto/update-todo.dto';
 import { EventsGateway } from 'src/events/events.gateway';
 
 @Controller('todos')
@@ -31,7 +31,7 @@ export class TodosController {
     @Query('filter') filter?: TodoFilter,
   ): Promise<TodoHomePage> {
     const todos = await this.todosService.getAll(res.locals.user.id, filter);
-    return { title: 'Todos', todos};
+    return { title: 'ToDo App', todos, user: res.locals.user};
   }
 
   @Get('toggle/:id')
@@ -74,9 +74,9 @@ export class TodosController {
   @Get('error/:type')
   getError(@Res() res: Response, @Param('type') type: TodoError) {
     if (type === 'empty-text') {
-      res.render('errors/error-empty-text');
+      res.render('errors/empty-text');
     } else if (type === 'empty-deadline') {
-      res.render('errors/error-empty-deadline');
+      res.render('errors/empty-deadline');
     }
   }
 
@@ -96,7 +96,7 @@ export class TodosController {
 
   @Post('update-name/:id')
   @Redirect('back')
-  async update(
+  async updateName(
     @Res() res: Response,
     @Param('id') id: number,
     @Body() updateTodoNameDto: UpdateTodoNameDto,
@@ -109,6 +109,44 @@ export class TodosController {
         id,
       );
       this.events.sendTodosToAllConnections(res.locals.user.id);
+      this.events.sendTodoDetailToAllConnections(res.locals.user.id, id);
+    }
+  }
+
+  @Post('update-priority/:id')
+  @Redirect('back')
+  async updatePriority(
+    @Res() res: Response,
+    @Param('id') id: number,
+    @Body() updateTodoPriorityDto: UpdateTodoPriorityDto,
+  ) {
+    const todo = await this.todosService.findOne(res.locals.user.id, id);
+    if (todo && (todo.priority !== updateTodoPriorityDto.priority)) {
+      await this.todosService.updatePriority(
+        res.locals.user.id,
+        updateTodoPriorityDto,
+        id,
+      );
+      this.events.sendTodosToAllConnections(res.locals.user.id);
+      this.events.sendTodoDetailToAllConnections(res.locals.user.id, id);
+    }
+  }
+
+  @Post('update-deadline/:id')
+  @Redirect('back')
+  async updateDeadline(
+    @Res() res: Response,
+    @Param('id') id: number,
+    @Body() updateTodoDeadlineDto: UpdateTodoDeadlineDto,
+  ) {
+    const todo = await this.todosService.findOne(res.locals.user.id, id);
+    console.log(todo.deadline,updateTodoDeadlineDto.deadline)
+    if (todo && (todo.deadline !== updateTodoDeadlineDto.deadline)) {
+      await this.todosService.updateDeadline(
+        res.locals.user.id,
+        updateTodoDeadlineDto,
+        id,
+      );
       this.events.sendTodoDetailToAllConnections(res.locals.user.id, id);
     }
   }

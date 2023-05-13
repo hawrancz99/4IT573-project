@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>
+        User settings
+    </title>
+</head>
+
+<body>
+    <h2>User settings for: </h2>
+    <div id="user-name">
+        <%- include('_user-name') %>
+    </div>
+    <a href="/">Back</a>
+    <hr>
+    <h1>Change username:</h1>
+    <form action="/users/update-name" method="post">
+        <input type="text" name="name" placeholder="Your new name" />
+        <button type="submit">Change username</button>
+    </form>
+    <br>
+    <h1>Change password:</h1>
+    <p>(You'll be signed out)</p>
+    <form action="/users/update-password" method="post">
+        <input type="password" name="oldPassword" placeholder="Your current password" />
+        <input type="password" name="newPassword" placeholder="Your new password" />
+        <input type="password" name="newPasswordCheck" placeholder="Your new password again" />
+        <button type="submit">Change password</button>
+    </form>
+    <script>
+        const ws = new WebSocket('ws://localhost:8080');
+        ws.addEventListener('message', (message) => {
+            const json = JSON.parse(message.data)
+            if (json.userId === Number('<%= user.id %>')) {
+                switch (json.type) {
+                    case 'new-username':
+                        document.getElementById('user-name').innerHTML = json.html
+                        break
+                    case 'user-credentials-updated':
+                        window.location.replace('/users/signout')
+                        break
+                }
+            }
+        })
+    </script>
+</body>
+
+</html>

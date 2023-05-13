@@ -14,9 +14,14 @@
     <h1>
         <%= title %>
     </h1>
-    <h2>Welcome <%= user.name %>!</h2>
+    <h2>Welcome</h2>
+    <div id="user-name">
+        <%- include('_user-name') %>
+    </div>
     <hr>
     <a href="/users/signout">Sign out</a>
+    <br>
+    <a href="/users/settings">User settings</a>
     <hr>
     <h3>List of your current todos:</h3>
 
@@ -29,6 +34,8 @@
     <br><a href="/todos?filter=undone">Show only undone todos</a>
     <br><a href="/todos?filter=latest">Show latest todos</a>
     <br><a href="/todos?filter=oldest">Show oldest todos</a>
+    <br><a href="/todos?filter=priorityDesc">Sort by priority (highest)</a>
+    <br><a href="/todos?filter=priorityAsc">Sort by priority (lowest)</a>
     <br><br><a href="/">Remove filters</a>
     <hr>
     <h3>Add a new Todo:</h3>
@@ -49,8 +56,18 @@
         const ws = new WebSocket('ws://localhost:8080');
         ws.addEventListener('message', (message) => {
             const json = JSON.parse(message.data)
-            if (json.type === 'todos' && json.userId === Number('<%= user.id %>')) {
-                document.getElementById('todos').innerHTML = json.html
+            if (json.userId === Number('<%= user.id %>')) {
+                switch (json.type) {
+                    case 'todos':
+                        document.getElementById('todos').innerHTML = json.html
+                        break;
+                    case 'new-username':
+                        document.getElementById('user-name').innerHTML = json.html
+                        break
+                    case 'user-credentials-updated':
+                        window.location.replace('/users/signout')
+                        break
+                }
             }
         })
     </script>

@@ -1,6 +1,7 @@
 <table>
     <tr>
         <th>Text</th>
+        <th>Priority</th>
         <th>Done</th>
         <th>Detail</th>
     </tr>
@@ -9,6 +10,15 @@
         <tr>
             <td>
                 <%= todo.text %>
+            </td>
+            <td>
+                <% if(todo.priority==="3" ){ %>
+                    <span>Very high</span>
+                    <% } else if(todo.priority==="2" ){ %>
+                        <span>High</span>
+                        <% } else { %>
+                            <span>Low</span>
+                            <% } %>
             </td>
             <td>
                 <%= todo.done ? 'yes' : 'no' %>
