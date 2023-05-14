@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserNameDto } from './dto/update-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 import { Knex } from 'knex';
 import { InjectKnex } from 'nestjs-knex';
 import * as crypto from 'crypto';
@@ -9,15 +9,19 @@ import { LoginUserDto } from './dto/login-user.dto';
 
 @Injectable()
 export class UsersService {
+  private static readonly USERS_TABLE = 'users';
   constructor(@InjectKnex() private readonly db: Knex) {}
 
   async getUserByToken(token: string): Promise<User> {
-    const user: User = await this.db.table('users').where({ token }).first();
+    const user: User = await this.db
+      .table(UsersService.USERS_TABLE)
+      .where({ token })
+      .first();
     return user;
   }
 
   async getUser(loginUserDto: LoginUserDto): Promise<User> {
-    const user: User = await this.getUserByName(loginUserDto.name);
+    const user: User = await this.findUser(null, loginUserDto.name);
     if (!user) return null;
 
     const hash = crypto
@@ -36,62 +40,44 @@ export class UsersService {
     const token = crypto.randomBytes(16).toString('hex');
 
     const user: User[] = await this.db
-      .table('users')
+      .table(UsersService.USERS_TABLE)
       .insert({ name: createUserDto.name, salt, hash, token })
       .returning('*');
 
     return user[0];
   }
 
-  async getUserByIdAndName(id: number, name: string): Promise<User> {
-    const user: User = await this.db
-      .table('users')
-      .where('id', id)
-      .andWhere('name', name)
-      .first();
+  async findUser(id?: number, name?: string): Promise<User> {
+    let query = this.db.table(UsersService.USERS_TABLE);
+
+    if (id) {
+      query = query.where({ id });
+    }
+
+    if (name) {
+      query = query.where({ name });
+    }
+
+    const user: User = await query.first();
     return user;
   }
 
-  async getUserByName (name:string): Promise<User>{
-    const user: User = await this.db
-      .table('users')
-      .where({ name })
-      .first();
-    return user;
-  }
-
-  async getUserById (id:number): Promise<User>{
-    const user: User = await this.db
-      .table('users')
-      .where({ id })
-      .first();
-    return user;
-  }
-
-  async updateName(id: number, updateUserNameDto: UpdateUserNameDto) {
+  async updateName(updateUserDto: UpdateUserDto) {
     return await this.db
-      .table('users')
-      .update({ name: updateUserNameDto.name })
-      .where('id', id);
+      .table(UsersService.USERS_TABLE)
+      .update({ name: updateUserDto.name })
+      .where('id', updateUserDto.id);
   }
 
-  async updatePassword(id: number, name: string, newPassword: string) {
+  async updatePassword(updateUserDto: UpdateUserDto, newPassword: string) {
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = crypto
       .pbkdf2Sync(newPassword, salt, 100000, 64, 'sha512')
       .toString('hex');
     return await this.db
-      .table('users')
+      .table(UsersService.USERS_TABLE)
       .update({ salt, hash })
-      .where('id', id)
-      .andWhere('name', name);
-  }
-
-  findAll() {
-    return `This action returns all users`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+      .where('id', updateUserDto.id)
+      .andWhere('name', updateUserDto.name);
   }
 }

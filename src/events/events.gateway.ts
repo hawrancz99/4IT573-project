@@ -6,13 +6,16 @@ import {
 } from '@nestjs/websockets';
 import { Server } from 'ws';
 import * as ejs from 'ejs';
-import { TodosService } from 'src/todos/todos.service';
-import { UsersService } from 'src/users/users.service';
-import { User } from 'src/users/entities/user.entity';
+import { TodosService } from '../todos/todos.service';
+import { UsersService } from '../users/users.service';
+import { User } from '../users/entities/user.entity';
 
 @WebSocketGateway(8080)
 export class EventsGateway {
-  constructor(private readonly todosService: TodosService, private readonly usersService: UsersService) {}
+  constructor(
+    private readonly todosService: TodosService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @WebSocketServer()
   server: Server;
@@ -30,7 +33,7 @@ export class EventsGateway {
     const message = {
       type: 'todos',
       html,
-      userId
+      userId,
     };
     const json = JSON.stringify(message);
     for (const connection of this.server.clients) {
@@ -53,7 +56,7 @@ export class EventsGateway {
         todoId: todo.id,
         todoPriority: todo.priority,
         todoDeadline: todo.deadline,
-        userId
+        userId,
       };
       const json = JSON.stringify(message);
       connection.send(json);
@@ -63,7 +66,7 @@ export class EventsGateway {
   public async closeTodoDetailConnections(
     id: number,
     deletedFromDetail: boolean,
-    userId: number
+    userId: number,
   ): Promise<void> {
     const html = await ejs.renderFile('views/todo-deleted.ejs');
     for (const connection of this.server.clients) {
@@ -72,7 +75,7 @@ export class EventsGateway {
         html,
         todoId: id,
         deletedFromDetail: deletedFromDetail,
-        userId
+        userId,
       };
       const json = JSON.stringify(message);
       connection.send(json);
@@ -80,14 +83,14 @@ export class EventsGateway {
   }
 
   public async sendUpdatedUserToAllConnections(userId: number): Promise<void> {
-    const user: User = await this.usersService.getUserById(userId);
+    const user: User = await this.usersService.findUser(userId);
     const html = await ejs.renderFile('views/_user-name.ejs', {
       user,
     });
     const message = {
       type: 'new-username',
       html,
-      userId: user.id
+      userId: user.id,
     };
     const json = JSON.stringify(message);
     for (const connection of this.server.clients) {
@@ -98,12 +101,11 @@ export class EventsGateway {
   public async sendSignoutUserToAllConnections(userId: number): Promise<void> {
     const message = {
       type: 'user-credentials-updated',
-      userId
+      userId,
     };
     const json = JSON.stringify(message);
     for (const connection of this.server.clients) {
       connection.send(json);
     }
   }
-  
 }

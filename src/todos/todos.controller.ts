@@ -11,27 +11,30 @@ import {
 } from '@nestjs/common';
 import { TodosService } from './todos.service';
 import { CreateTodoDto } from './dto/create-todo.dto';
-import {
-  TodoError,
-  TodoFilter,
-  TodoHomePage,
-} from './entities/todo.entity';
+import { TodoError, TodoFilter, ITodoHomePage } from './entities/todo.entity';
 import { Response } from 'express';
-import { UpdateTodoDeadlineDto, UpdateTodoNameDto, UpdateTodoPriorityDto } from './dto/update-todo.dto';
-import { EventsGateway } from 'src/events/events.gateway';
+import {
+  UpdateTodoDeadlineDto,
+  UpdateTodoNameDto,
+  UpdateTodoPriorityDto,
+} from './dto/update-todo.dto';
+import { EventsGateway } from '../events/events.gateway';
 
 @Controller('todos')
 export class TodosController {
-  constructor(private readonly todosService: TodosService, private readonly events: EventsGateway) {}
+  constructor(
+    private readonly todosService: TodosService,
+    private readonly events: EventsGateway,
+  ) {}
 
   @Get()
   @Render('index')
   async getTodos(
     @Res() res: Response,
     @Query('filter') filter?: TodoFilter,
-  ): Promise<TodoHomePage> {
+  ): Promise<ITodoHomePage> {
     const todos = await this.todosService.getAll(res.locals.user.id, filter);
-    return { title: 'ToDo App', todos, user: res.locals.user};
+    return { title: 'ToDo App', todos, user: res.locals.user };
   }
 
   @Get('toggle/:id')
@@ -66,8 +69,12 @@ export class TodosController {
     const todo = await this.todosService.findOne(res.locals.user.id, id);
     if (todo) {
       await this.todosService.remove(res.locals.user.id, id);
-      this.events.sendTodosToAllConnections(res.locals.user.id); // inform connections viewing todos list
-      this.events.closeTodoDetailConnections(id, fromDetail === "true",res.locals.user.id); // inform connections viewing todo detail
+      this.events.sendTodosToAllConnections(res.locals.user.id);
+      this.events.closeTodoDetailConnections(
+        id,
+        fromDetail === 'true',
+        res.locals.user.id,
+      );
     }
   }
 
@@ -103,11 +110,11 @@ export class TodosController {
   ) {
     const todo = await this.todosService.findOne(res.locals.user.id, id);
     if (todo) {
-      await this.todosService.updateName(
-        res.locals.user.id,
-        updateTodoNameDto,
-        id,
-      );
+      await this.todosService.updateTodo({
+        id: id,
+        text: updateTodoNameDto.text,
+        user_id: res.locals.user.id,
+      },'text');
       this.events.sendTodosToAllConnections(res.locals.user.id);
       this.events.sendTodoDetailToAllConnections(res.locals.user.id, id);
     }
@@ -121,12 +128,12 @@ export class TodosController {
     @Body() updateTodoPriorityDto: UpdateTodoPriorityDto,
   ) {
     const todo = await this.todosService.findOne(res.locals.user.id, id);
-    if (todo && (todo.priority !== updateTodoPriorityDto.priority)) {
-      await this.todosService.updatePriority(
-        res.locals.user.id,
-        updateTodoPriorityDto,
-        id,
-      );
+    if (todo && todo.priority !== updateTodoPriorityDto.priority) {
+      await this.todosService.updateTodo({
+        id: id,
+        priority: updateTodoPriorityDto.priority,
+        user_id: res.locals.user.id,
+      },'priority');
       this.events.sendTodosToAllConnections(res.locals.user.id);
       this.events.sendTodoDetailToAllConnections(res.locals.user.id, id);
     }
@@ -140,13 +147,12 @@ export class TodosController {
     @Body() updateTodoDeadlineDto: UpdateTodoDeadlineDto,
   ) {
     const todo = await this.todosService.findOne(res.locals.user.id, id);
-    console.log(todo.deadline,updateTodoDeadlineDto.deadline)
-    if (todo && (todo.deadline !== updateTodoDeadlineDto.deadline)) {
-      await this.todosService.updateDeadline(
-        res.locals.user.id,
-        updateTodoDeadlineDto,
-        id,
-      );
+    if (todo && todo.deadline !== updateTodoDeadlineDto.deadline) {
+      await this.todosService.updateTodo({
+        id: id,
+        deadline: updateTodoDeadlineDto.deadline,
+        user_id: res.locals.user.id,
+      },'deadline');
       this.events.sendTodoDetailToAllConnections(res.locals.user.id, id);
     }
   }

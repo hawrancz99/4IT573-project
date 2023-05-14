@@ -7,7 +7,6 @@ import {
   Redirect,
   Render,
   Res,
-  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -18,11 +17,14 @@ import {
   UpdateUserNameDto,
   UpdateUserPasswordDto,
 } from './dto/update-user.dto';
-import { EventsGateway } from 'src/events/events.gateway';
+import { EventsGateway } from '../events/events.gateway';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService, private readonly events: EventsGateway) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly events: EventsGateway,
+  ) {}
 
   @Get('/register')
   @Render('register')
@@ -76,22 +78,26 @@ export class UsersController {
   ) {
     if (!updateUserNameBody.name) return { url: 'error/empty-new-username' };
 
-    if(updateUserNameBody.name === res.locals.user.name) return { url: 'error/same-name'}
-    
-    const usernameExists = await this.usersService.getUserByName(updateUserNameBody.name);
-    if (usernameExists) return { url: 'error/name-exists'};
+    if (updateUserNameBody.name === res.locals.user.name)
+      return { url: 'error/same-name' };
 
-    const user = await this.usersService.getUserByIdAndName(
+    const usernameExists = await this.usersService.findUser(
+      null,
+      updateUserNameBody.name,
+    );
+    if (usernameExists) return { url: 'error/name-exists' };
+
+    const user = await this.usersService.findUser(
       res.locals.user.id,
       res.locals.user.name,
     );
     if (!user) {
       return { url: 'error/no-user' };
     } else {
-      await this.usersService.updateName(
-        res.locals.user.id,
-        updateUserNameBody,
-      );
+      await this.usersService.updateName({
+        id: res.locals.user.id,
+        name: updateUserNameBody.name,
+      });
       this.events.sendUpdatedUserToAllConnections(res.locals.user.id);
     }
   }
@@ -123,8 +129,7 @@ export class UsersController {
       return { url: 'error/same-password' };
     } else {
       await this.usersService.updatePassword(
-        res.locals.user.id,
-        res.locals.user.name,
+        { id: res.locals.user.id, name: res.locals.user.name },
         updatePassBody.newPassword,
       );
       this.events.sendSignoutUserToAllConnections(res.locals.user.id);

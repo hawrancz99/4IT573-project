@@ -12,7 +12,7 @@ export class Todo {
 export type TodoFilter = 'undone' | 'done' | 'latest' | 'oldest' | 'priorityDesc' | 'priorityAsc';
 export type TodoError = 'empty-text' | 'empty-deadline';
 
-export interface TodoHomePage{
+export interface ITodoHomePage{
     title: string;
     todos: Todo[];
     user: User

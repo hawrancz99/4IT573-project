@@ -3,32 +3,21 @@ import { CreateTodoDto } from './dto/create-todo.dto';
 import { Todo, TodoFilter } from './entities/todo.entity';
 import { Knex } from 'knex';
 import { InjectKnex } from 'nestjs-knex';
-import { UpdateTodoDeadlineDto, UpdateTodoNameDto, UpdateTodoPriorityDto } from './dto/update-todo.dto';
+import { TodoUpdateField, UpdateTodoDto } from './dto/update-todo.dto';
 
 @Injectable()
 export class TodosService {
+  private static readonly TODO_TABLE = 'todos';
+
   constructor(@InjectKnex() private readonly db: Knex) {}
 
   async create(createTodoDto: CreateTodoDto) {
-    return await this.db.table('todos').insert({
+    return await this.db.table(TodosService.TODO_TABLE).insert({
       text: createTodoDto.text,
       priority: createTodoDto.priority,
       deadline: createTodoDto.deadline,
       user_id: createTodoDto.user_id,
     });
-  }
-
-  async findAll(userId: number): Promise<Todo[]> {
-     const todos = await this.db.table('todos').select('*').where('user_id', userId);
-     return todos;
-  }
-
-  async findAllByStatus(userId: number, done: number): Promise<Todo[]> {
-    return await this.db
-      .table('todos')
-      .select('*')
-      .where('user_id', userId)
-      .andWhere('done', done); // SQLlite stores boolean as 1/0
   }
 
   async getAll(userId: number, filter?: TodoFilter): Promise<Todo[]> {
@@ -64,27 +53,52 @@ export class TodosService {
     return todos;
   }
 
-  async findOne(userId:number, id: number): Promise<Todo> {
-    return await this.db.table('todos').select('*').where('user_id', userId).andWhere('id', id).first()
+  async findAll(user_id: number): Promise<Todo[]> {
+    const todos = await this.db
+      .table(TodosService.TODO_TABLE)
+      .select('*')
+      .where({ user_id });
+    return todos;
   }
 
-  async updateStatus(userId: number, todo: Todo) {
-    return await this.db.table('todos').update({ done: !todo.done }).where('id', todo.id).andWhere('user_id', userId)
+  async findAllByStatus(user_id: number, done: number): Promise<Todo[]> {
+    return await this.db
+      .table(TodosService.TODO_TABLE)
+      .select('*')
+      .where({ user_id })
+      .andWhere({ done });
   }
 
-  async remove(userId: number,id: number) {
-    return await this.db.table('todos').delete().where('id', id).andWhere('user_id', userId)
+  async findOne(user_id: number, id: number): Promise<Todo> {
+    return await this.db
+      .table(TodosService.TODO_TABLE)
+      .select('*')
+      .where({ user_id })
+      .andWhere({ id })
+      .first();
   }
 
-  async updateName(userId: number, updateTodoNameDto: UpdateTodoNameDto, id: number) {
-    return await this.db.table('todos').update({ text: updateTodoNameDto.text }).where('id', id).andWhere('user_id', userId)
+  async updateStatus(user_id: number, todo: Todo) {
+    return await this.db
+      .table(TodosService.TODO_TABLE)
+      .update({ done: !todo.done })
+      .where('id', todo.id)
+      .andWhere({ user_id });
   }
 
-  async updatePriority(userId: number, updateTodoPriorityDto: UpdateTodoPriorityDto, id: number) {
-    return await this.db.table('todos').update({ priority: updateTodoPriorityDto.priority }).where('id', id).andWhere('user_id', userId)
+  async updateTodo(updateTodoDto: UpdateTodoDto, field: TodoUpdateField) {
+    return await this.db
+      .table(TodosService.TODO_TABLE)
+      .update({ [field]: updateTodoDto[field] })
+      .where('id', updateTodoDto.id)
+      .andWhere('user_id', updateTodoDto.user_id);
   }
 
-  async updateDeadline(userId: number, updateTodoDeadlineDto: UpdateTodoDeadlineDto, id: number) {
-    return await this.db.table('todos').update({ deadline: updateTodoDeadlineDto.deadline }).where('id', id).andWhere('user_id', userId)
+  async remove(user_id: number, id: number) {
+    return await this.db
+      .table(TodosService.TODO_TABLE)
+      .delete()
+      .where({ id })
+      .andWhere({ user_id });
   }
 }

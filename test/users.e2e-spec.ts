@@ -8,26 +8,27 @@ import { CreateUserDto } from '../src/users/dto/create-user.dto';
 import { LoginUserDto } from '../src/users/dto/login-user.dto';
 import { ExpressAdapter, NestExpressApplication } from '@nestjs/platform-express';
 
+// dummy objects for tests
+const dummyCreateUserDto: CreateUserDto = {
+  name: 'test',
+  password: 'test'
+}
+const dummyLoginUserDto: LoginUserDto = {
+  name: dummyCreateUserDto.name,
+  password: dummyCreateUserDto.password
+}
+
 describe('AppController (e2e)', () => {
   let app: NestExpressApplication;
   let db: Knex;
   let usersService: UsersService;
-  const dummyCreateUserDto: CreateUserDto = {
-    name: 'test',
-    password: 'test'
-  }
-  const dummyLoginUserDto: LoginUserDto = {
-    name: dummyCreateUserDto.name,
-    password: dummyCreateUserDto.password
-  }
-
+ 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
   
     app = moduleRef.createNestApplication(new ExpressAdapter());
-    
     db = knex({
       client: 'sqlite3',
       connection: {
@@ -80,6 +81,42 @@ describe('AppController (e2e)', () => {
     expect(await usersService.getUserByToken('bad')).not.toEqual(user)
   })
 
+  it('findUser finds user by name', async () => {
+    const user = await usersService.createUser(dummyCreateUserDto)
+  
+    expect((await usersService.findUser(null,dummyCreateUserDto.name)).name).toEqual(user.name)
+  })
+
+  it('findUser finds user by id', async () => {
+    const user = await usersService.createUser(dummyCreateUserDto)
+  
+    expect((await usersService.findUser(1,null)).name).toEqual(user.name);
+  })
+
+  it('findUser finds user by id and name', async () => {
+    const user = await usersService.createUser(dummyCreateUserDto)
+  
+    expect((await usersService.findUser(1,user.name)).name).toEqual(user.name);
+  })
+
+  it('updateName updates user\'s name', async () => {
+    const user = await usersService.createUser(dummyCreateUserDto)
+
+    await usersService.updateName({id:1,name:'newName'})
+
+    await expect(usersService.findUser(null,user.name)).resolves.toBeUndefined();
+    expect((await usersService.findUser(1,'newName')).name).toEqual('newName');
+  })
+
+  it('updatePassword updates user\'s password', async () => {
+    const user = await usersService.createUser(dummyCreateUserDto)
+
+    await usersService.updatePassword({id: 1, name: user.name},'newPassword')
+
+    expect((await usersService.getUser({name: user.name, password: 'newPassword'})).name).toEqual(user.name);
+    await expect(usersService.getUser({name: user.name, password: dummyLoginUserDto.password})).resolves.toBeNull()
+  })
+
   it('GET /users/register shows registration form', async () => {
     const response = await supertest(app.getHttpServer()).get('/users/register')
   
@@ -91,17 +128,5 @@ describe('AppController (e2e)', () => {
 
     expect(response.text).toContain('Login')
   })
-
-  /*it('POST /users/register after registration username is visible', async () => {
-    const agent = supertest.agent(app.getHttpServer())
-    const res = await agent
-      .post('/users/register')
-      .type('form')
-      .send({ name: 'a', password: 'a' })
-      
-
-    expect(res.headers.location).toEqual('/todos');
-    expect(res.text).toContain('a')
-  })*/
 
 });

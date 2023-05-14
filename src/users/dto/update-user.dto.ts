@@ -1,5 +1,6 @@
-import { OmitType } from '@nestjs/mapped-types';
+import { OmitType, PickType } from '@nestjs/mapped-types';
 import { CreateUserDto } from './create-user.dto';
+import { User } from '../entities/user.entity';
 
 export class UpdateUserNameDto extends OmitType(CreateUserDto, [
   'password',
@@ -10,3 +11,5 @@ export class UpdateUserPasswordDto {
   newPassword: string;
   newPasswordCheck: string;
 }
+
+export class UpdateUserDto extends PickType(User, ['id', 'name'] as const) {}

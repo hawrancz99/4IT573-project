@@ -16,7 +16,7 @@ import { EventsModule } from './events/events.module';
         client: 'sqlite3',
         useNullAsDefault: false,
         connection: {
-          filename: './mydb.sqlite',
+          filename: process.env.NODE_ENV === 'test' ? ':memory:' : './mydb.sqlite',
         },
       },
     }),
