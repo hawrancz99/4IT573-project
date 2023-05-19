@@ -7,6 +7,8 @@ import { UsersModule } from './users/users.module';
 import { auth } from './middleware/auth.middleware';
 import { UserMiddleware } from './middleware/user.middleware';
 import { EventsModule } from './events/events.module';
+import { APP_FILTER } from '@nestjs/core';
+import { NotFoundExceptionFilter } from './filters/not-found-exception.filter';
 
 @Module({
   imports: [
@@ -24,7 +26,10 @@ import { EventsModule } from './events/events.module';
     EventsModule
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService,{
+    provide: APP_FILTER,
+    useClass: NotFoundExceptionFilter,
+  },],
 })
 
 export class AppModule implements NestModule {
