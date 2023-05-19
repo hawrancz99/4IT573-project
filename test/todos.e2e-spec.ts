@@ -1,5 +1,4 @@
 import { Test } from '@nestjs/testing';
-import * as supertest from 'supertest';
 import { AppModule } from '../src/app.module';
 import { Knex } from 'nestjs-knex';
 import knex from 'knex';
@@ -10,11 +9,7 @@ import {
 import { CreateTodoDto } from '../src/todos/dto/create-todo.dto';
 import { TodosService } from '../src/todos/todos.service';
 import { UsersService } from '../src/users/users.service';
-import { request } from 'express';
-import { CreateUserDto } from '../src/users/dto/create-user.dto';
-import { LoginUserDto } from '../src/users/dto/login-user.dto';
 import { Todo } from 'src/todos/entities/todo.entity';
-import * as crypto from 'crypto';
 
 // dummy objects for tests
 const dummyTodoDto: CreateTodoDto = {
@@ -22,14 +17,6 @@ const dummyTodoDto: CreateTodoDto = {
   priority: '2',
   deadline: new Date().toLocaleDateString('cz-CZ'),
   user_id: 1,
-};
-const dummyCreateUserDto: CreateUserDto = {
-  name: 'test',
-  password: 'test',
-};
-const dummyLoginUserDto: LoginUserDto = {
-  name: dummyCreateUserDto.name,
-  password: dummyCreateUserDto.password,
 };
 
 describe('AppController (e2e)', () => {
